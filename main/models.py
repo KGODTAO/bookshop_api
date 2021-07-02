@@ -66,6 +66,12 @@ class OrderItems(models.Model):
 
 class WishList(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes')
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='likes')
     is_liked = models.BooleanField(default=False)
+
+
+class FavouriteList(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favourites')
+    title = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='favourites')
+    is_favourite = models.BooleanField(default=False)
 

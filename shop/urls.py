@@ -22,13 +22,13 @@ from drf_yasg.views import get_schema_view
 from rest_framework.permissions import AllowAny
 from rest_framework.routers import SimpleRouter
 
-from main.views import BooksViewSet, ReviewViewSet, OrderViewSet
+from main.views import BooksViewSet, ReviewViewSet, OrderViewSet, FavouriteViewSet
 
 router = SimpleRouter()
 router.register('books', BooksViewSet)
 router.register('reviews', ReviewViewSet)
 router.register('orders', OrderViewSet)
-
+router.register('favourites', FavouriteViewSet)
 
 schema_view = get_schema_view(
     openapi.Info(
