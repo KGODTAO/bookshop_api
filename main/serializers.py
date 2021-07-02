@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import Book, Review, OrderItems, Order
+from .models import Book, Review, OrderItems, Order, FavouriteList
 
 User = get_user_model()
 
@@ -100,5 +100,21 @@ class BooksDetailsSerializer(serializers.ModelSerializer):
 
 
     def get_like(self, instance):
-        likes_count = instance.reviews.count()
-        return likes_count
+        likes_count = sum(instance.likes.values_list('is_liked', flat=True))
+        likes = likes_count if likes_count > 0 else 0
+        return likes
+
+class FavouriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FavouriteList
+        exclude = ('is_favourite', 'user', 'id', 'title')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['Favourite'] = FavouriteInfoSerializer(instance.title).data
+        return representation
+
+class FavouriteInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = ['title']

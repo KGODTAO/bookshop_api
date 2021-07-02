@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import render
 
 # Create your views here.
@@ -8,9 +9,11 @@ from rest_framework import status, viewsets, mixins
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from .filters import BookFilter, OrderFilter
-from .models import Book, Review, Order, WishList
+from .models import Book, Review, Order, WishList, FavouriteList
 from .permissions import IsAuthorOrAdminPermission, DenyAll
-from .serializers import BooksListSerializer, BooksDetailsSerializer, ReviewSerializer, OrderSerializer
+from .serializers import BooksListSerializer, BooksDetailsSerializer, ReviewSerializer, OrderSerializer, \
+    FavouriteSerializer
+
 
 class BooksViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
@@ -26,7 +29,7 @@ class BooksViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsAdminUser()]
+            return [IsAuthenticated()]
         elif self.action in ['create_review', 'like']:
             return [IsAuthenticated()]
         return []
@@ -56,6 +59,32 @@ class BooksViewSet(viewsets.ModelViewSet):
             like_obj.is_liked = True
             like_obj.save()
             return Response('liked')
+
+    @action(detail=True, methods=['POST'])
+    def favourite(self, request, pk):
+        title = self.get_object()
+        user = request.user
+        favourite_obj, created = FavouriteList.objects.get_or_create(title=title, user=user)
+        if favourite_obj.is_favourite:
+            favourite_obj.is_favourite = False
+            favourite_obj.delete()
+            return Response('remove from favourites')
+        else:
+            favourite_obj.is_favourite = True
+            favourite_obj.save()
+            return Response('add to favourites')
+
+    @action(detail=False, methods=['get'])
+    def search(self, request):
+        q = request.query_params.get('q')
+        queryset = self.get_queryset()
+        queryset = queryset.filter(Q(title__icontains=q) |
+                                  Q(description__icontains=q))
+        serializer = BooksListSerializer(queryset, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
 
 
 class ReviewViewSet(mixins.CreateModelMixin,
@@ -93,3 +122,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         return queryset
 
 
+class FavouriteViewSet(viewsets.ModelViewSet):
+    queryset = FavouriteList.objects.all()
+    serializer_class = FavouriteSerializer
+    permission_classes = [IsAuthenticated, ]
